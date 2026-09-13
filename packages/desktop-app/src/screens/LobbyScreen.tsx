@@ -41,6 +41,7 @@ export function LobbyScreen() {
       <p id="status">
         Room: <strong>{roomCode}</strong> &mdash; {status}
       </p>
+      <p className="hint">Press F1 to toggle between Main and your last team.</p>
 
       <DndContext onDragEnd={handleDragEnd}>
         <div className="team-box-grid">

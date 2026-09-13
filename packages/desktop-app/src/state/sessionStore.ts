@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import { Room, RoomEvent, Track } from "livekit-client";
-import { teamChannelId, type ChannelId } from "@ron-voice/shared";
+import { MAIN_CHANNEL, teamChannelId, type ChannelId } from "@ron-voice/shared";
 import { createRoom as apiCreateRoom, fetchToken } from "../lib/backendClient";
 import { connectToRoom, getParticipantChannel, setLocalChannel } from "../lib/livekitClient";
 import { attachChannelRouting, type ChannelRouting } from "../lib/channelRouting";
@@ -13,6 +13,7 @@ import {
 } from "../lib/teamSync";
 
 let activeRouting: ChannelRouting | null = null;
+let unsubscribeHotkeys: (() => void) | null = null;
 
 export interface ParticipantInfo {
   identity: string;
@@ -33,6 +34,7 @@ interface SessionState {
   createdRoomCode: string | null;
   teams: TeamInfo[];
   participants: ParticipantInfo[];
+  lastTeamChannel: ChannelId | null;
 
   setBackendUrl: (value: string) => void;
   setDisplayName: (value: string) => void;
@@ -42,6 +44,7 @@ interface SessionState {
   leave: () => void;
   addTeam: (name: string) => Promise<void>;
   moveLocalParticipantToChannel: (channel: ChannelId) => Promise<void>;
+  toggleMainChannel: () => Promise<void>;
 }
 
 function isAudioAudible(publications: Map<string, { kind: Track.Kind; isSubscribed?: boolean }>): boolean {
@@ -86,6 +89,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   createdRoomCode: null,
   teams: [],
   participants: [],
+  lastTeamChannel: null,
 
   setBackendUrl: (value) => set({ backendUrl: value }),
   setDisplayName: (value) => set({ displayName: value }),
@@ -121,6 +125,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       const isHost = get().createdRoomCode === roomCode.trim();
       activeRouting = attachChannelRouting(room);
 
+      unsubscribeHotkeys = window.hotkeys.onToggleMain(() => {
+        void get().toggleMainChannel();
+      });
+
       room.on(RoomEvent.ParticipantConnected, (participant) => {
         set({ participants: refreshParticipants(room) });
         if (get().isHost) {
@@ -154,6 +162,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       room.on(RoomEvent.Disconnected, () => {
         activeRouting?.detach();
         activeRouting = null;
+        unsubscribeHotkeys?.();
+        unsubscribeHotkeys = null;
         set({
           screen: "join",
           room: null,
@@ -162,6 +172,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
           teams: [],
           isHost: false,
           createdRoomCode: null,
+          lastTeamChannel: null,
         });
       });
 
@@ -194,6 +205,23 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     if (!room) return;
     await setLocalChannel(room, channel);
     activeRouting?.reconcileAll();
-    set({ participants: refreshParticipants(room) });
+    set({
+      participants: refreshParticipants(room),
+      ...(channel !== MAIN_CHANNEL ? { lastTeamChannel: channel } : {}),
+    });
+  },
+
+  toggleMainChannel: async () => {
+    const { participants, lastTeamChannel, moveLocalParticipantToChannel } = get();
+    const me = participants.find((p) => p.isLocal);
+    if (!me) return;
+
+    if (me.channel === MAIN_CHANNEL) {
+      if (lastTeamChannel) {
+        await moveLocalParticipantToChannel(lastTeamChannel);
+      }
+    } else {
+      await moveLocalParticipantToChannel(MAIN_CHANNEL);
+    }
   },
 }));

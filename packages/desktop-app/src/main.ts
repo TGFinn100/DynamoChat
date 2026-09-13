@@ -1,15 +1,18 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, globalShortcut } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { HOTKEY_TOGGLE_MAIN, TOGGLE_MAIN_ACCELERATOR } from './lib/hotkeyChannel';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
 
+let mainWindow: BrowserWindow | null = null;
+
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -30,10 +33,41 @@ const createWindow = () => {
   mainWindow.webContents.openDevTools();
 };
 
+// Electron's globalShortcut has no press/release distinction, so holding the
+// key re-fires it at the OS's key-repeat rate (observed ~1/sec on Windows
+// defaults). This cooldown can't give true release-detection - a deliberate
+// double-tap within the window is also swallowed - but it keeps a held key
+// from spamming repeated toggles. True release-detection would need a
+// lower-level global keyboard hook (e.g. uiohook-napi), deliberately avoided
+// here since it's more likely to draw anti-cheat scrutiny than globalShortcut.
+const TOGGLE_COOLDOWN_MS = 1200;
+let lastToggleAt = 0;
+
+function registerChannelHotkeys(): void {
+  const ok = globalShortcut.register(TOGGLE_MAIN_ACCELERATOR, () => {
+    const now = Date.now();
+    if (now - lastToggleAt < TOGGLE_COOLDOWN_MS) {
+      return;
+    }
+    lastToggleAt = now;
+    mainWindow?.webContents.send(HOTKEY_TOGGLE_MAIN);
+  });
+  if (!ok) {
+    console.warn(`Failed to register global shortcut: ${TOGGLE_MAIN_ACCELERATOR}`);
+  }
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', () => {
+  createWindow();
+  registerChannelHotkeys();
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

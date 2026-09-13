@@ -57,6 +57,11 @@ body {
   margin: 0 0 0.5rem;
 }
 
+.hint {
+  font-size: 0.85rem;
+  color: #666;
+}
+
 .team-box--over {
   border-color: #4c8bf5;
   background: rgba(76, 139, 245, 0.08);
