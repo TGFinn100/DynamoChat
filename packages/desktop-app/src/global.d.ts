@@ -1,4 +1,5 @@
 import type { SetHotkeyResult } from "./lib/hotkeyChannel";
+import type { UpdateStatus } from "./lib/updateChannel";
 
 declare global {
   interface Window {
@@ -11,6 +12,10 @@ declare global {
     };
     deepLink: {
       onJoinRoom: (callback: (roomCode: string) => void) => () => void;
+    };
+    updateStatus: {
+      onStatusChange: (callback: (status: UpdateStatus) => void) => () => void;
+      restartNow: () => void;
     };
   }
 }

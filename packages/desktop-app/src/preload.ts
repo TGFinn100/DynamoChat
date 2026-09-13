@@ -9,6 +9,7 @@ import {
   type SetHotkeyResult,
 } from './lib/hotkeyChannel';
 import { DEEP_LINK_JOIN_ROOM } from './lib/deepLink';
+import { UPDATE_RESTART_NOW, UPDATE_STATUS_CHANGED, type UpdateStatus } from './lib/updateChannel';
 
 contextBridge.exposeInMainWorld('hotkeys', {
   onToggleMain(callback: () => void): () => void {
@@ -33,5 +34,17 @@ contextBridge.exposeInMainWorld('deepLink', {
       callback(roomCode);
     ipcRenderer.on(DEEP_LINK_JOIN_ROOM, listener);
     return () => ipcRenderer.removeListener(DEEP_LINK_JOIN_ROOM, listener);
+  },
+});
+
+contextBridge.exposeInMainWorld('updateStatus', {
+  onStatusChange(callback: (status: UpdateStatus) => void): () => void {
+    const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus) =>
+      callback(status);
+    ipcRenderer.on(UPDATE_STATUS_CHANGED, listener);
+    return () => ipcRenderer.removeListener(UPDATE_STATUS_CHANGED, listener);
+  },
+  restartNow(): void {
+    ipcRenderer.send(UPDATE_RESTART_NOW);
   },
 });

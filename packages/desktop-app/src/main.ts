@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
+import { app, autoUpdater, BrowserWindow, globalShortcut, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { updateElectronApp } from 'update-electron-app';
@@ -11,18 +11,35 @@ import {
 } from './lib/hotkeyChannel';
 import { DEEP_LINK_JOIN_ROOM, DEEP_LINK_PROTOCOL, extractRoomCodeFromArgs } from './lib/deepLink';
 import { loadAccelerator, saveAccelerator } from './hotkeyPersistence';
+import { UPDATE_RESTART_NOW, UPDATE_STATUS_CHANGED, type UpdateStatus } from './lib/updateChannel';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
 
+function sendUpdateStatus(status: UpdateStatus): void {
+  mainWindow?.webContents.send(UPDATE_STATUS_CHANGED, status);
+}
+
 // Only meaningful for a packaged install (Squirrel-installed), not `electron
 // forge start` during dev - update-electron-app checks GitHub Releases for
-// this repo and applies newer versions via Squirrel automatically.
+// this repo and applies newer versions via Squirrel automatically. A prior
+// update silently downloaded and applied with no visible sign anything was
+// happening, and got interrupted when the app was closed mid-apply, leaving
+// a broken partial install - these events drive an in-app banner so closing
+// early is a deliberate choice, not an accident. notifyUser is off since the
+// banner replaces update-electron-app's own native "restart?" dialog.
 if (app.isPackaged) {
-  updateElectronApp();
+  autoUpdater.on('update-available', () => sendUpdateStatus({ state: 'downloading' }));
+  autoUpdater.on('update-downloaded', () => sendUpdateStatus({ state: 'ready' }));
+  autoUpdater.on('error', (err) => sendUpdateStatus({ state: 'error', message: err.message }));
+  updateElectronApp({ notifyUser: false });
 }
+
+ipcMain.on(UPDATE_RESTART_NOW, () => {
+  autoUpdater.quitAndInstall();
+});
 
 // A protocol link launches a whole new process on Windows; without a single
 // instance lock every click would open a duplicate window instead of routing

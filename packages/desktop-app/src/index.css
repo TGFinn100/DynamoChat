@@ -124,6 +124,26 @@ body {
   justify-content: space-between;
 }
 
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  margin: -2rem -2rem 1rem;
+  font-size: 0.9rem;
+}
+
+.update-banner--downloading {
+  background: #7a5a12;
+  color: #fff3cd;
+}
+
+.update-banner--ready {
+  background: #1f6f43;
+  color: #d9f7e8;
+}
+
 .settings-panel__header {
   display: flex;
   align-items: center;

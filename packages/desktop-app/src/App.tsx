@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useSessionStore } from "./state/sessionStore";
 import { JoinScreen } from "./screens/JoinScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
+import { UpdateBanner } from "./components/UpdateBanner";
 
 export function App() {
   const screen = useSessionStore((s) => s.screen);
@@ -13,5 +14,10 @@ export function App() {
     });
   }, [setRoomCode]);
 
-  return screen === "lobby" ? <LobbyScreen /> : <JoinScreen />;
+  return (
+    <>
+      <UpdateBanner />
+      {screen === "lobby" ? <LobbyScreen /> : <JoinScreen />}
+    </>
+  );
 }
