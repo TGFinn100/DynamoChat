@@ -177,6 +177,11 @@ select {
   font-size: 0.9rem;
 }
 
+.update-banner--available {
+  background: #1f4f7a;
+  color: #d9ecf7;
+}
+
 .update-banner--downloading {
   background: #7a5a12;
   color: #fff3cd;

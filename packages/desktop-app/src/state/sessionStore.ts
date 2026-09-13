@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import { Room, RoomEvent, Track } from "livekit-client";
+import log from "electron-log/renderer";
 import { MAIN_CHANNEL, teamChannelId, type ChannelId } from "@ron-voice/shared";
 import { createRoom as apiCreateRoom, fetchToken, HttpError } from "../lib/backendClient";
 import { connectToRoom, getParticipantChannel, setLocalChannel } from "../lib/livekitClient";
@@ -165,6 +166,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       );
       set({ roomCode, createdRoomCode: roomCode, status: `Room created: ${roomCode}` });
     } catch (err) {
+      log.error("Failed to create room", err);
       set({ status: `Error creating room: ${describeError(err)}` });
     }
   },
@@ -207,14 +209,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       room.on(RoomEvent.ParticipantAttributesChanged, () => {
         set({ participants: refreshParticipants(room, get().participants) });
       });
-      room.on(RoomEvent.TrackSubscribed, (track) => {
+      room.on(RoomEvent.TrackSubscribed, (track, _publication, participant) => {
         if (track.kind === Track.Kind.Audio) {
+          log.info(`Attaching audio track from ${participant.identity}`);
           document.body.appendChild(track.attach());
         }
         set({ participants: refreshParticipants(room, get().participants) });
       });
-      room.on(RoomEvent.TrackUnsubscribed, (track) => {
+      room.on(RoomEvent.TrackUnsubscribed, (track, _publication, participant) => {
         if (track.kind === Track.Kind.Audio) {
+          log.info(`Detaching audio track from ${participant.identity}`);
           track.detach().forEach((el) => el.remove());
         }
         set({ participants: refreshParticipants(room, get().participants) });
@@ -241,6 +245,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         }
       });
       room.on(RoomEvent.Disconnected, () => {
+        log.info("Disconnected from LiveKit room");
         activeRouting?.detach();
         activeRouting = null;
         unsubscribeHotkeys?.();
@@ -279,6 +284,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         participants: refreshParticipants(room),
       });
     } catch (err) {
+      log.error("Failed to join room", err);
       set({ status: `Error joining room: ${describeError(err)}` });
     }
   },

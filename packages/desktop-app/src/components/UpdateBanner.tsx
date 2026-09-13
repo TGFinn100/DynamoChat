@@ -8,6 +8,17 @@ export function UpdateBanner() {
     return window.updateStatus.onStatusChange(setStatus);
   }, []);
 
+  if (status.state === "available") {
+    return (
+      <div className="update-banner update-banner--available">
+        <span>Update v{status.version} is available.</span>
+        <button type="button" onClick={() => window.updateStatus.checkNow()}>
+          Update Now
+        </button>
+      </div>
+    );
+  }
+
   if (status.state === "downloading") {
     return (
       <div className="update-banner update-banner--downloading">

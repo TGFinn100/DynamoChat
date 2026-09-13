@@ -2,6 +2,7 @@ import { app, autoUpdater, BrowserWindow, globalShortcut, ipcMain, screen } from
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { updateElectronApp } from 'update-electron-app';
+import log from 'electron-log/main';
 import {
   HOTKEY_SETTINGS_GET,
   HOTKEY_SETTINGS_SET,
@@ -11,7 +12,15 @@ import {
 } from './lib/hotkeyChannel';
 import { DEEP_LINK_JOIN_ROOM, DEEP_LINK_PROTOCOL, extractRoomCodeFromArgs } from './lib/deepLink';
 import { loadAccelerator, saveAccelerator } from './hotkeyPersistence';
-import { UPDATE_RESTART_NOW, UPDATE_STATUS_CHANGED, type UpdateStatus } from './lib/updateChannel';
+import {
+  UPDATE_AUTO_UPDATE_GET,
+  UPDATE_AUTO_UPDATE_SET,
+  UPDATE_CHECK_NOW,
+  UPDATE_RESTART_NOW,
+  UPDATE_STATUS_CHANGED,
+  type UpdateStatus,
+} from './lib/updateChannel';
+import { loadAutoUpdateEnabled, saveAutoUpdateEnabled } from './updateSettingsPersistence';
 import { APP_GET_VERSION } from './lib/appInfoChannel';
 import {
   OVERLAY_GAMES_STATUS_GET,
@@ -30,27 +39,113 @@ if (started) {
   app.quit();
 }
 
+// Writes to %APPDATA%/Dynamo Chat/logs/main.log (see electron-log's default
+// path). initialize() also wires up electron-log/renderer so the same file
+// captures renderer-side logs (LiveKit connection/track events) without any
+// extra IPC plumbing. startCatching/startLogging cover crashes and unhandled
+// rejections we didn't think to log explicitly.
+log.initialize();
+log.errorHandler.startCatching();
+log.eventLogger.startLogging();
+
 function sendUpdateStatus(status: UpdateStatus): void {
   mainWindow?.webContents.send(UPDATE_STATUS_CHANGED, status);
 }
 
+const UPDATE_REPO = 'TGFinn100/DynamoChat';
+
+// True once the real Squirrel-backed updater (update-electron-app) has been
+// started for this session. It's only safe to start once: calling
+// updateElectronApp() sets a feed URL and its own recurring check interval,
+// so a second call would register a duplicate interval and duplicate
+// autoUpdater listeners.
+let realUpdaterStarted = false;
+
 // Only meaningful for a packaged install (Squirrel-installed), not `electron
-// forge start` during dev - update-electron-app checks GitHub Releases for
-// this repo and applies newer versions via Squirrel automatically. A prior
-// update silently downloaded and applied with no visible sign anything was
-// happening, and got interrupted when the app was closed mid-apply, leaving
-// a broken partial install - these events drive an in-app banner so closing
-// early is a deliberate choice, not an accident. notifyUser is off since the
-// banner replaces update-electron-app's own native "restart?" dialog.
-if (app.isPackaged) {
+// forge start` during dev - checks GitHub Releases for this repo and applies
+// newer versions via Squirrel. A prior update silently downloaded and
+// applied with no visible sign anything was happening, and got interrupted
+// when the app was closed mid-apply, leaving a broken partial install -
+// these events drive an in-app banner so closing early is a deliberate
+// choice, not an accident. notifyUser is off since the banner replaces
+// update-electron-app's own native "restart?" dialog.
+function startRealUpdater(): void {
+  if (realUpdaterStarted) return;
+  realUpdaterStarted = true;
   autoUpdater.on('update-available', () => sendUpdateStatus({ state: 'downloading' }));
   autoUpdater.on('update-downloaded', () => sendUpdateStatus({ state: 'ready' }));
-  autoUpdater.on('error', (err) => sendUpdateStatus({ state: 'error', message: err.message }));
-  updateElectronApp({ notifyUser: false });
+  autoUpdater.on('error', (err) => {
+    log.error('Auto-updater error', err);
+    sendUpdateStatus({ state: 'error', message: err.message });
+  });
+  updateElectronApp({ notifyUser: false, logger: log });
+}
+
+// Electron's (Squirrel-backed) autoUpdater has no "check only" mode - the
+// moment checkForUpdates() finds something newer it starts downloading. So
+// when auto-update is off, we can't use it to merely ask "is there
+// something newer" - instead this hits the GitHub releases API directly
+// (read-only, no download) and just tells the renderer to show a popup if
+// the tag is newer. The real download/apply only starts once the user
+// clicks "Update Now", via UPDATE_CHECK_NOW below.
+const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
+
+function isNewerVersion(candidate: string, current: string): boolean {
+  const c = candidate.split('.').map(Number);
+  const u = current.split('.').map(Number);
+  for (let i = 0; i < Math.max(c.length, u.length); i++) {
+    const diff = (c[i] ?? 0) - (u[i] ?? 0);
+    if (diff !== 0) return diff > 0;
+  }
+  return false;
+}
+
+async function checkForNewerRelease(): Promise<void> {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${UPDATE_REPO}/releases/latest`, {
+      headers: { 'User-Agent': 'DynamoChat-UpdateCheck', Accept: 'application/vnd.github+json' },
+    });
+    if (!res.ok) {
+      log.warn(`Update check got HTTP ${res.status} from GitHub releases API`);
+      return;
+    }
+    const data = (await res.json()) as { tag_name?: string };
+    const latest = data.tag_name?.replace(/^v/, '');
+    if (latest && isNewerVersion(latest, app.getVersion())) {
+      log.info(`Update available: v${latest} (current v${app.getVersion()})`);
+      sendUpdateStatus({ state: 'available', version: latest });
+    }
+  } catch (err) {
+    log.warn('Update check failed', err);
+  }
+}
+
+let autoUpdateEnabled = false;
+
+if (app.isPackaged) {
+  autoUpdateEnabled = loadAutoUpdateEnabled();
+  if (autoUpdateEnabled) {
+    startRealUpdater();
+  } else {
+    void checkForNewerRelease();
+    setInterval(() => void checkForNewerRelease(), UPDATE_CHECK_INTERVAL_MS);
+  }
 }
 
 ipcMain.on(UPDATE_RESTART_NOW, () => {
   autoUpdater.quitAndInstall();
+});
+
+ipcMain.on(UPDATE_CHECK_NOW, () => {
+  startRealUpdater();
+});
+
+ipcMain.handle(UPDATE_AUTO_UPDATE_GET, () => autoUpdateEnabled);
+
+ipcMain.on(UPDATE_AUTO_UPDATE_SET, (_event, enabled: boolean) => {
+  autoUpdateEnabled = enabled;
+  saveAutoUpdateEnabled(enabled);
+  if (enabled) startRealUpdater();
 });
 
 ipcMain.handle(APP_GET_VERSION, () => app.getVersion());
@@ -298,7 +393,7 @@ function registerChannelHotkeys(): void {
   currentAccelerator = loadAccelerator();
   const ok = registerToggleShortcut(currentAccelerator);
   if (!ok) {
-    console.warn(`Failed to register global shortcut: ${currentAccelerator}`);
+    log.warn(`Failed to register global shortcut: ${currentAccelerator}`);
   }
 }
 

@@ -4,6 +4,7 @@ import { captureAccelerator } from "../lib/hotkeyCapture";
 import { listInputDevices, listOutputDevices } from "../lib/deviceSettings";
 import { ThemeSettings } from "./ThemeSettings";
 import { OverlaySettings } from "./OverlaySettings";
+import { UpdateSettings } from "./UpdateSettings";
 
 interface Props {
   onClose: () => void;
@@ -115,6 +116,8 @@ export function SettingsPanel({ onClose }: Props) {
       <OverlaySettings />
 
       <ThemeSettings />
+
+      <UpdateSettings />
     </div>
   );
 }

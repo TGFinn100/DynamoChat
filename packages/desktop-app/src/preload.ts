@@ -9,7 +9,14 @@ import {
   type SetHotkeyResult,
 } from './lib/hotkeyChannel';
 import { DEEP_LINK_JOIN_ROOM } from './lib/deepLink';
-import { UPDATE_RESTART_NOW, UPDATE_STATUS_CHANGED, type UpdateStatus } from './lib/updateChannel';
+import {
+  UPDATE_AUTO_UPDATE_GET,
+  UPDATE_AUTO_UPDATE_SET,
+  UPDATE_CHECK_NOW,
+  UPDATE_RESTART_NOW,
+  UPDATE_STATUS_CHANGED,
+  type UpdateStatus,
+} from './lib/updateChannel';
 import { APP_GET_VERSION } from './lib/appInfoChannel';
 import {
   OVERLAY_GAMES_STATUS_GET,
@@ -61,6 +68,15 @@ contextBridge.exposeInMainWorld('updateStatus', {
   },
   restartNow(): void {
     ipcRenderer.send(UPDATE_RESTART_NOW);
+  },
+  checkNow(): void {
+    ipcRenderer.send(UPDATE_CHECK_NOW);
+  },
+  getAutoUpdateEnabled(): Promise<boolean> {
+    return ipcRenderer.invoke(UPDATE_AUTO_UPDATE_GET);
+  },
+  setAutoUpdateEnabled(enabled: boolean): void {
+    ipcRenderer.send(UPDATE_AUTO_UPDATE_SET, enabled);
   },
 });
 

@@ -19,6 +19,9 @@ declare global {
     updateStatus: {
       onStatusChange: (callback: (status: UpdateStatus) => void) => () => void;
       restartNow: () => void;
+      checkNow: () => void;
+      getAutoUpdateEnabled: () => Promise<boolean>;
+      setAutoUpdateEnabled: (enabled: boolean) => void;
     };
     appInfo: {
       getVersion: () => Promise<string>;

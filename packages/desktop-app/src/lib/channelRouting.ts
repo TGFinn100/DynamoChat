@@ -6,6 +6,7 @@ import {
   type RemoteParticipant,
   type RemoteTrackPublication,
 } from "livekit-client";
+import log from "electron-log/renderer";
 import { MAIN_CHANNEL, type ChannelId } from "@ron-voice/shared";
 import { getParticipantChannel } from "./livekitClient";
 
@@ -21,6 +22,10 @@ function reconcileParticipant(participant: RemoteParticipant, myChannel: Channel
     if (publication.kind !== Track.Kind.Audio) return;
     const remotePub = publication as RemoteTrackPublication;
     if (remotePub.isSubscribed !== desired) {
+      log.info(
+        `${desired ? "Subscribing to" : "Unsubscribing from"} ${participant.identity}'s audio ` +
+          `(their channel: "${participantChannel}", my channel: "${myChannel}")`,
+      );
       remotePub.setSubscribed(desired);
     }
   });
