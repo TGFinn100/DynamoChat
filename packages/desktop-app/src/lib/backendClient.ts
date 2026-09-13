@@ -1,26 +1,40 @@
 import type { RoomCodeResponse, TokenResponse } from "@ron-voice/shared";
 
-export async function createRoom(backendUrl: string): Promise<RoomCodeResponse> {
-  const res = await fetch(`${backendUrl}/rooms`, { method: "POST" });
-  if (!res.ok) {
-    throw new Error(`Failed to create room (${res.status})`);
+async function fetchJson<T>(url: string, init: RequestInit, timeoutMs: number): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Request failed (${res.status})`);
+    }
+    return res.json() as Promise<T>;
+  } finally {
+    clearTimeout(timeout);
   }
-  return res.json() as Promise<RoomCodeResponse>;
+}
+
+export async function createRoom(
+  backendUrl: string,
+  timeoutMs = 5000,
+): Promise<RoomCodeResponse> {
+  return fetchJson<RoomCodeResponse>(`${backendUrl}/rooms`, { method: "POST" }, timeoutMs);
 }
 
 export async function fetchToken(
   backendUrl: string,
   roomCode: string,
   displayName: string,
+  timeoutMs = 5000,
 ): Promise<TokenResponse> {
-  const res = await fetch(`${backendUrl}/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ roomCode, displayName }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? `Failed to fetch token (${res.status})`);
-  }
-  return res.json() as Promise<TokenResponse>;
+  return fetchJson<TokenResponse>(
+    `${backendUrl}/token`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomCode, displayName }),
+    },
+    timeoutMs,
+  );
 }

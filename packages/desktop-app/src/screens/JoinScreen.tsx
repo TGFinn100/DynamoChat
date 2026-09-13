@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useSessionStore } from "../state/sessionStore";
+import { buildDeepLink } from "../lib/deepLink";
 
 export function JoinScreen() {
   const backendUrl = useSessionStore((s) => s.backendUrl);
@@ -10,6 +12,14 @@ export function JoinScreen() {
   const setRoomCode = useSessionStore((s) => s.setRoomCode);
   const createRoom = useSessionStore((s) => s.createRoom);
   const join = useSessionStore((s) => s.join);
+
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopyLink() {
+    await navigator.clipboard.writeText(buildDeepLink(roomCode.trim()));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
     <main>
@@ -48,6 +58,11 @@ export function JoinScreen() {
           <button type="button" onClick={() => void join()}>
             Join
           </button>
+          {roomCode.trim() && (
+            <button type="button" onClick={() => void handleCopyLink()}>
+              {copied ? "Copied!" : "Copy Link"}
+            </button>
+          )}
         </div>
       </section>
       <p id="status">{status}</p>

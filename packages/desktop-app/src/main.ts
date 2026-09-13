@@ -2,13 +2,46 @@ import { app, BrowserWindow, globalShortcut } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { HOTKEY_TOGGLE_MAIN, TOGGLE_MAIN_ACCELERATOR } from './lib/hotkeyChannel';
+import { DEEP_LINK_JOIN_ROOM, DEEP_LINK_PROTOCOL, extractRoomCodeFromArgs } from './lib/deepLink';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
 
+// A protocol link launches a whole new process on Windows; without a single
+// instance lock every click would open a duplicate window instead of routing
+// into the one already running. If this instance loses the race, quit
+// immediately rather than also registering windows/listeners it'll never use.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+
 let mainWindow: BrowserWindow | null = null;
+
+if (gotSingleInstanceLock) {
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient(DEEP_LINK_PROTOCOL, process.execPath, [
+        path.resolve(process.argv[1]),
+      ]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient(DEEP_LINK_PROTOCOL);
+  }
+
+  app.on('second-instance', (_event, argv) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+    const roomCode = extractRoomCodeFromArgs(argv);
+    if (roomCode) {
+      mainWindow?.webContents.send(DEEP_LINK_JOIN_ROOM, roomCode);
+    }
+  });
+}
 
 const createWindow = () => {
   // Create the browser window.
@@ -31,6 +64,16 @@ const createWindow = () => {
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
+
+  // A cold start via protocol link passes the URL in argv; wait for the page
+  // to actually load before sending it, or the renderer's listener won't be
+  // attached yet and the message is silently lost.
+  mainWindow.webContents.once('did-finish-load', () => {
+    const roomCode = extractRoomCodeFromArgs(process.argv);
+    if (roomCode) {
+      mainWindow?.webContents.send(DEEP_LINK_JOIN_ROOM, roomCode);
+    }
+  });
 };
 
 // Electron's globalShortcut has no press/release distinction, so holding the
@@ -60,10 +103,12 @@ function registerChannelHotkeys(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', () => {
-  createWindow();
-  registerChannelHotkeys();
-});
+if (gotSingleInstanceLock) {
+  app.on('ready', () => {
+    createWindow();
+    registerChannelHotkeys();
+  });
+}
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();

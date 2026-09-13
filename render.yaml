@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: ron-voice-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build --workspace=packages/backend
+    startCommand: npm run start --workspace=packages/backend
+    envVars:
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false

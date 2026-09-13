@@ -6,6 +6,7 @@ import { createRoom as apiCreateRoom, fetchToken } from "../lib/backendClient";
 import { connectToRoom, getParticipantChannel, setLocalChannel } from "../lib/livekitClient";
 import { attachChannelRouting, type ChannelRouting } from "../lib/channelRouting";
 import { playChannelSwitchCue } from "../lib/audioCues";
+import { retryWithWakeUp } from "../lib/retry";
 import {
   broadcastTeamAdded,
   decodeTeamSyncMessage,
@@ -99,7 +100,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   createRoom: async () => {
     try {
       set({ status: "Creating room..." });
-      const { roomCode } = await apiCreateRoom(get().backendUrl.trim());
+      const { roomCode } = await retryWithWakeUp(
+        () => apiCreateRoom(get().backendUrl.trim()),
+        {
+          onWaking: () =>
+            set({ status: "Waking up the server... this can take up to a minute." }),
+        },
+      );
       set({ roomCode, createdRoomCode: roomCode, status: `Room created: ${roomCode}` });
     } catch (err) {
       set({ status: `Error creating room: ${(err as Error).message}` });
@@ -115,10 +122,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
     try {
       set({ status: "Fetching token..." });
-      const { token, livekitUrl } = await fetchToken(
-        backendUrl.trim(),
-        roomCode.trim(),
-        displayName.trim(),
+      const { token, livekitUrl } = await retryWithWakeUp(
+        () => fetchToken(backendUrl.trim(), roomCode.trim(), displayName.trim()),
+        {
+          onWaking: () =>
+            set({ status: "Waking up the server... this can take up to a minute." }),
+        },
       );
 
       set({ status: "Connecting to voice..." });
