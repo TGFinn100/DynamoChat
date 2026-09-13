@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Joining Dynamo Chat...</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #100a09;
+    color: #f2ece6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    text-align: center;
+    padding: 1.5rem;
+  }
+  .card {
+    max-width: 24rem;
+  }
+  h1 {
+    margin-bottom: 0.5rem;
+  }
+  p {
+    color: #cfc6bb;
+    line-height: 1.5;
+  }
+  code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.3rem;
+  }
+  a.button {
+    display: inline-block;
+    margin-top: 1rem;
+    background: #d1263f;
+    color: #fff;
+    text-decoration: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.4rem;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="heading">Opening Dynamo Chat&hellip;</h1>
+    <p id="message">
+      If nothing happened, you may not have the app installed yet, or your browser blocked the
+      redirect - try the button below.
+    </p>
+    <div id="fallback"></div>
+  </div>
+  <script>
+    var params = new URLSearchParams(window.location.search);
+    var code = (params.get("code") || "").trim();
+    var fallback = document.getElementById("fallback");
+
+    if (!code) {
+      document.getElementById("heading").textContent = "Missing room code";
+      document.getElementById("message").innerHTML =
+        "This link is missing a room code. Ask whoever sent it to check the link.";
+    } else {
+      var appLink = "ronvoice://" + encodeURIComponent(code.toLowerCase());
+      var openButton = document.createElement("a");
+      openButton.className = "button";
+      openButton.href = appLink;
+      openButton.textContent = "Open Dynamo Chat";
+      fallback.appendChild(openButton);
+      window.location.href = appLink;
+    }
+
+    var downloadLink = document.createElement("p");
+    downloadLink.innerHTML =
+      'Don\'t have the app? <a href="https://github.com/TGFinn100/DynamoChat/releases/latest">Download Dynamo Chat</a>';
+    fallback.appendChild(downloadLink);
+  </script>
+</body>
+</html>
