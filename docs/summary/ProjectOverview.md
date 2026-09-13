@@ -14,4 +14,4 @@ DynamoChat (GitHub repo name; in-app product name "RoN Voice Chat") is a custom 
 
 ## Open questions
 
-None on the concept itself — see [Deployment And Distribution](DeploymentAndDistribution.md) for the one open technical loose end.
+None on the concept — v1 is fully built, deployed, and distributing itself via auto-update. The two explicitly-deferred stretch goals (fullscreen overlay, Ready or Not game-state integration) remain unstarted if picked up later.

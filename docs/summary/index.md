@@ -5,19 +5,18 @@ Custom Electron voice-chat desktop app for Finn's Ready or Not friend group: a m
 ## How We Work Best
 
 - Never take an action (build, install, publish, deploy, or anything else non-trivial) without Finn's explicit go-ahead first, even mid-flow — this has been repeated as a hard rule, not just a default courtesy.
-- Verify a fix against the actual deployed/live target, not just a local instance, before telling Finn it works — see [Deployment And Distribution](DeploymentAndDistribution.md) for an incident where a backend fix was confirmed locally but not yet pushed, so Finn's test against the live app appeared to fail.
-- Commit and push a verified feature immediately, before asking Finn to test it against anything deployed — same incident above.
+- Verify `git status` is clean immediately before any build/publish/deploy step, and before telling Finn to test something against a live/deployed target — don't assume the working tree matches what was just changed. See [Deployment And Distribution](DeploymentAndDistribution.md) for three separate incidents this caused in one session before it became standard practice.
 
 ## Topics
 
 - [Project Overview](ProjectOverview.md) — product concept, audio/channel model, what's explicitly out of scope for v1.
-- [Architecture](Architecture.md) — monorepo structure, the LiveKit single-room/attribute-routing design, and the Electron/TypeScript/Squirrel gotchas hit along the way.
-- [Implementation Status](ImplementationStatus.md) — phase-by-phase feature state, all verified.
-- [Deployment And Distribution](DeploymentAndDistribution.md) — GitHub/Render/installer/auto-update, including the one open item (auto-update verification pending).
+- [Architecture](Architecture.md) — monorepo structure, the LiveKit single-room/attribute-routing design, the theme system, and gotchas hit along the way.
+- [Implementation Status](ImplementationStatus.md) — full feature state, all verified, including Settings (hotkey remap, devices, themes) and name persistence.
+- [Deployment And Distribution](DeploymentAndDistribution.md) — GitHub/Render/installer/auto-update, now fully confirmed working end-to-end.
 
 ## Recently Worked On
 
-- [Deployment And Distribution](DeploymentAndDistribution.md)
 - [Implementation Status](ImplementationStatus.md)
+- [Deployment And Distribution](DeploymentAndDistribution.md)
 - [Architecture](Architecture.md)
 - [Project Overview](ProjectOverview.md)
