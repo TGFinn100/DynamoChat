@@ -82,7 +82,7 @@ function refreshParticipants(room: Room): ParticipantInfo[] {
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   screen: "join",
-  backendUrl: "http://localhost:3001",
+  backendUrl: "https://ron-voice-backend.onrender.com",
   displayName: "",
   roomCode: "",
   status: "Not connected.",
