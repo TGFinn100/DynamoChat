@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@ron-voice/shared": "0.1.0",
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "livekit-client": "^2.0.0"
   }
 }

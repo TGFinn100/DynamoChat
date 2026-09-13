@@ -1,33 +1,97 @@
-/**
- * This file will automatically be loaded by vite and run in the "renderer" context.
- * To learn more about the differences between the "main" and the "renderer" context in
- * Electron, visit:
- *
- * https://electronjs.org/docs/tutorial/process-model
- *
- * By default, Node.js integration in this file is disabled. When enabling Node.js integration
- * in a renderer process, please be aware of potential security implications. You can read
- * more about security risks here:
- *
- * https://electronjs.org/docs/tutorial/security
- *
- * To enable Node.js integration in this file, open up `main.ts` and enable the `nodeIntegration`
- * flag:
- *
- * ```
- *  // Create the browser window.
- *  mainWindow = new BrowserWindow({
- *    width: 800,
- *    height: 600,
- *    webPreferences: {
- *      nodeIntegration: true
- *    }
- *  });
- * ```
- */
+import "./index.css";
+import { Room, RoomEvent } from "livekit-client";
+import { createRoom, fetchToken } from "./lib/backendClient";
+import { connectToRoom } from "./lib/livekitClient";
 
-import './index.css';
+const backendUrlInput = document.getElementById("backend-url") as HTMLInputElement;
+const displayNameInput = document.getElementById("display-name") as HTMLInputElement;
+const roomCodeInput = document.getElementById("room-code") as HTMLInputElement;
+const createRoomBtn = document.getElementById("create-room-btn") as HTMLButtonElement;
+const joinBtn = document.getElementById("join-btn") as HTMLButtonElement;
+const leaveBtn = document.getElementById("leave-btn") as HTMLButtonElement;
+const statusEl = document.getElementById("status") as HTMLParagraphElement;
+const participantListEl = document.getElementById("participant-list") as HTMLUListElement;
 
-console.log(
-  '👋 This message is being logged by "renderer.ts", included via Vite',
-);
+let currentRoom: Room | null = null;
+
+function setStatus(message: string): void {
+  statusEl.textContent = message;
+}
+
+function renderParticipants(room: Room): void {
+  participantListEl.innerHTML = "";
+
+  const addItem = (name: string, isLocal: boolean) => {
+    const li = document.createElement("li");
+    li.textContent = isLocal ? `${name} (you)` : name;
+    participantListEl.appendChild(li);
+  };
+
+  addItem(room.localParticipant.name || room.localParticipant.identity, true);
+  room.remoteParticipants.forEach((participant) => {
+    addItem(participant.name || participant.identity, false);
+  });
+}
+
+function setConnectedUiState(connected: boolean): void {
+  joinBtn.disabled = connected;
+  createRoomBtn.disabled = connected;
+  leaveBtn.disabled = !connected;
+  roomCodeInput.disabled = connected;
+  displayNameInput.disabled = connected;
+  backendUrlInput.disabled = connected;
+}
+
+createRoomBtn.addEventListener("click", () => {
+  void (async () => {
+    try {
+      setStatus("Creating room...");
+      const { roomCode } = await createRoom(backendUrlInput.value.trim());
+      roomCodeInput.value = roomCode;
+      setStatus(`Room created: ${roomCode}`);
+    } catch (err) {
+      setStatus(`Error creating room: ${(err as Error).message}`);
+    }
+  })();
+});
+
+joinBtn.addEventListener("click", () => {
+  void (async () => {
+    const roomCode = roomCodeInput.value.trim();
+    const displayName = displayNameInput.value.trim();
+    const backendUrl = backendUrlInput.value.trim();
+
+    if (!roomCode || !displayName) {
+      setStatus("Enter a display name and room code first.");
+      return;
+    }
+
+    try {
+      setStatus("Fetching token...");
+      const { token, livekitUrl } = await fetchToken(backendUrl, roomCode, displayName);
+
+      setStatus("Connecting to voice...");
+      const room = await connectToRoom(livekitUrl, token);
+      currentRoom = room;
+
+      room.on(RoomEvent.ParticipantConnected, () => renderParticipants(room));
+      room.on(RoomEvent.ParticipantDisconnected, () => renderParticipants(room));
+      room.on(RoomEvent.Disconnected, () => {
+        setStatus("Disconnected.");
+        setConnectedUiState(false);
+        participantListEl.innerHTML = "";
+        currentRoom = null;
+      });
+
+      setStatus(`Connected to ${roomCode}`);
+      setConnectedUiState(true);
+      renderParticipants(room);
+    } catch (err) {
+      setStatus(`Error joining room: ${(err as Error).message}`);
+    }
+  })();
+});
+
+leaveBtn.addEventListener("click", () => {
+  void currentRoom?.disconnect();
+});

@@ -2,12 +2,37 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Hello World!</title>
-
+    <title>RoN Voice Chat</title>
   </head>
   <body>
-    <h1>💖 Hello World!</h1>
-    <p>Welcome to your Electron application.</p>
+    <main id="app">
+      <h1>RoN Voice Chat</h1>
+
+      <section id="join-form">
+        <label>
+          Backend URL
+          <input id="backend-url" type="text" value="http://localhost:3001" />
+        </label>
+        <label>
+          Display name
+          <input id="display-name" type="text" placeholder="Your name" />
+        </label>
+        <label>
+          Room code
+          <input id="room-code" type="text" placeholder="e.g. RV3GDF" />
+        </label>
+        <div class="button-row">
+          <button id="create-room-btn" type="button">Create New Room</button>
+          <button id="join-btn" type="button">Join</button>
+          <button id="leave-btn" type="button" disabled>Leave</button>
+        </div>
+      </section>
+
+      <section id="status-section">
+        <p id="status">Not connected.</p>
+        <ul id="participant-list"></ul>
+      </section>
+    </main>
     <script type="module" src="/src/renderer.ts"></script>
   </body>
 </html>

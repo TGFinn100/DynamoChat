@@ -6,3 +6,34 @@ body {
   max-width: 38rem;
   padding: 2rem;
 }
+
+#join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+#join-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.button-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#status-section {
+  margin-top: 1.5rem;
+}
+
+#participant-list {
+  list-style: none;
+  padding: 0;
+}
+
+#participant-list li {
+  padding: 0.25rem 0;
+}
