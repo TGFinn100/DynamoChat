@@ -1,0 +1,17 @@
+{
+  "name": "multi-lobby-voice-chat",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "backend:dev": "npm run dev --workspace=packages/backend",
+    "desktop:dev": "npm run start --workspace=packages/desktop-app"
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.4": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.21.5": true
+  }
+}
