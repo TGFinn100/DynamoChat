@@ -1,5 +1,15 @@
 import type { RoomCodeResponse, TokenResponse } from "@ron-voice/shared";
 
+export class HttpError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
 async function fetchJson<T>(url: string, init: RequestInit, timeoutMs: number): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -7,7 +17,7 @@ async function fetchJson<T>(url: string, init: RequestInit, timeoutMs: number): 
     const res = await fetch(url, { ...init, signal: controller.signal });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? `Request failed (${res.status})`);
+      throw new HttpError(body.error ?? `Request failed (${res.status})`, res.status);
     }
     return res.json() as Promise<T>;
   } finally {

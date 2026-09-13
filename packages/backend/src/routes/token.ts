@@ -3,6 +3,7 @@ import { Router } from "express";
 import type { TokenRequest, TokenResponse } from "@ron-voice/shared";
 import { mintToken } from "../livekit/tokens.js";
 import { roomNameFromCode } from "../util/roomName.js";
+import { isValidRoomCode } from "../util/activeRooms.js";
 
 export const tokenRouter = Router();
 
@@ -13,6 +14,11 @@ tokenRouter.post("/token", async (req, res) => {
 
   if (!roomCode || !displayName) {
     res.status(400).json({ error: "roomCode and displayName are required" });
+    return;
+  }
+
+  if (!isValidRoomCode(roomCode)) {
+    res.status(404).json({ error: "Room not found - check the code and try again." });
     return;
   }
 

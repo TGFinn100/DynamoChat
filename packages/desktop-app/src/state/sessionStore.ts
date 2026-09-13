@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { nanoid } from "nanoid";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { MAIN_CHANNEL, teamChannelId, type ChannelId } from "@ron-voice/shared";
-import { createRoom as apiCreateRoom, fetchToken } from "../lib/backendClient";
+import { createRoom as apiCreateRoom, fetchToken, HttpError } from "../lib/backendClient";
 import { connectToRoom, getParticipantChannel, setLocalChannel } from "../lib/livekitClient";
 import { attachChannelRouting, type ChannelRouting } from "../lib/channelRouting";
 import { playChannelSwitchCue } from "../lib/audioCues";
@@ -47,6 +47,25 @@ interface SessionState {
   addTeam: (name: string) => Promise<void>;
   moveLocalParticipantToChannel: (channel: ChannelId) => Promise<void>;
   toggleMainChannel: () => Promise<void>;
+}
+
+function describeError(err: unknown): string {
+  if (err instanceof HttpError) {
+    return err.message;
+  }
+  // fetch throws these on a network failure/timeout, not a definitive server
+  // response - everything else (mic-permission errors, LiveKit connect
+  // errors) already carries its own specific, actionable message.
+  if (err instanceof DOMException && err.name === "AbortError") {
+    return "Could not reach the server. Check your internet connection and try again.";
+  }
+  if (err instanceof TypeError) {
+    return "Could not reach the server. Check your internet connection and try again.";
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return "Something went wrong. Please try again.";
 }
 
 function isAudioAudible(publications: Map<string, { kind: Track.Kind; isSubscribed?: boolean }>): boolean {
@@ -109,7 +128,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       );
       set({ roomCode, createdRoomCode: roomCode, status: `Room created: ${roomCode}` });
     } catch (err) {
-      set({ status: `Error creating room: ${(err as Error).message}` });
+      set({ status: `Error creating room: ${describeError(err)}` });
     }
   },
 
@@ -186,6 +205,20 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         });
       });
 
+      room.on(RoomEvent.Reconnecting, () => {
+        set({ status: "Connection lost, reconnecting..." });
+      });
+      room.on(RoomEvent.Reconnected, () => {
+        const myChannel = getParticipantChannel(room.localParticipant.attributes);
+        void setLocalChannel(room, myChannel).then(() => {
+          activeRouting?.reconcileAll();
+          set({
+            participants: refreshParticipants(room),
+            status: `Connected to ${get().roomCode.trim()}`,
+          });
+        });
+      });
+
       set({
         room,
         screen: "lobby",
@@ -194,7 +227,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         participants: refreshParticipants(room),
       });
     } catch (err) {
-      set({ status: `Error joining room: ${(err as Error).message}` });
+      set({ status: `Error joining room: ${describeError(err)}` });
     }
   },
 
