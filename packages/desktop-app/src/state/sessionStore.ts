@@ -207,10 +207,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       room.on(RoomEvent.ParticipantAttributesChanged, () => {
         set({ participants: refreshParticipants(room, get().participants) });
       });
-      room.on(RoomEvent.TrackSubscribed, () => {
+      room.on(RoomEvent.TrackSubscribed, (track) => {
+        if (track.kind === Track.Kind.Audio) {
+          document.body.appendChild(track.attach());
+        }
         set({ participants: refreshParticipants(room, get().participants) });
       });
-      room.on(RoomEvent.TrackUnsubscribed, () => {
+      room.on(RoomEvent.TrackUnsubscribed, (track) => {
+        if (track.kind === Track.Kind.Audio) {
+          track.detach().forEach((el) => el.remove());
+        }
         set({ participants: refreshParticipants(room, get().participants) });
       });
       room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
