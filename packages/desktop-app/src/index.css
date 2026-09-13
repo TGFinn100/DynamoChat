@@ -1,27 +1,23 @@
-/* v0.3.0 test theme: dark purple bg / dark blue text (light mode),
-   dark blue bg / dark purple text (dark mode) - deliberately loud,
-   temporary colors so an auto-update to this version is obvious at a
-   glance. Swap back to a normal palette once the update test is done. */
 :root {
   color-scheme: light dark;
-  --bg: #3a1e5c;
-  --text: #5b7cff;
-  --muted: #8f9fd6;
-  --border: #6a4a8c;
-  --surface: #4a2a70;
-  --accent: #7ea8ff;
-  --accent-bg: rgba(126, 168, 255, 0.15);
+  --bg: #f7f8fa;
+  --text: #1c1f26;
+  --muted: #6b7280;
+  --border: #d1d5db;
+  --surface: #eef0f3;
+  --accent: #3b82f6;
+  --accent-bg: rgba(59, 130, 246, 0.1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #16204a;
-    --text: #a06ee0;
-    --muted: #8f8fc0;
-    --border: #4a5a9c;
-    --surface: #22306a;
-    --accent: #b088e0;
-    --accent-bg: rgba(176, 136, 224, 0.15);
+    --bg: #14161a;
+    --text: #e5e7eb;
+    --muted: #9aa1ac;
+    --border: #2c3038;
+    --surface: #1e2127;
+    --accent: #60a5fa;
+    --accent-bg: rgba(96, 165, 250, 0.15);
   }
 }
 
