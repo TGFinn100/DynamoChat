@@ -2,7 +2,7 @@
 
 ## Current state
 
-All 7 phases of the original build plan are implemented and verified, plus a round of post-plan feature requests. Current desktop-app version: v0.6.0 (published and confirmed running via auto-update).
+All 7 phases of the original build plan are implemented and verified, plus two rounds of post-plan feature requests. Current desktop-app version: v0.7.0 (published and confirmed running via auto-update). The v0.7.0 round (in-game overlay, game stats, theme auto-switch, rebrand) is detailed in [Game Integration](GameIntegration.md) rather than repeated here.
 
 ## History
 
