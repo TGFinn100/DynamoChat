@@ -5,6 +5,7 @@ import { MAIN_CHANNEL, teamChannelId, type ChannelId } from "@ron-voice/shared";
 import { createRoom as apiCreateRoom, fetchToken } from "../lib/backendClient";
 import { connectToRoom, getParticipantChannel, setLocalChannel } from "../lib/livekitClient";
 import { attachChannelRouting, type ChannelRouting } from "../lib/channelRouting";
+import { playChannelSwitchCue } from "../lib/audioCues";
 import {
   broadcastTeamAdded,
   decodeTeamSyncMessage,
@@ -209,6 +210,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       participants: refreshParticipants(room),
       ...(channel !== MAIN_CHANNEL ? { lastTeamChannel: channel } : {}),
     });
+    playChannelSwitchCue(channel);
   },
 
   toggleMainChannel: async () => {
