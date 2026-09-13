@@ -1,9 +1,16 @@
-import { app, BrowserWindow, globalShortcut } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { updateElectronApp } from 'update-electron-app';
-import { HOTKEY_TOGGLE_MAIN, TOGGLE_MAIN_ACCELERATOR } from './lib/hotkeyChannel';
+import {
+  HOTKEY_SETTINGS_GET,
+  HOTKEY_SETTINGS_SET,
+  HOTKEY_TOGGLE_MAIN,
+  TOGGLE_MAIN_ACCELERATOR,
+  type SetHotkeyResult,
+} from './lib/hotkeyChannel';
 import { DEEP_LINK_JOIN_ROOM, DEEP_LINK_PROTOCOL, extractRoomCodeFromArgs } from './lib/deepLink';
+import { loadAccelerator, saveAccelerator } from './hotkeyPersistence';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -93,9 +100,10 @@ const createWindow = () => {
 // here since it's more likely to draw anti-cheat scrutiny than globalShortcut.
 const TOGGLE_COOLDOWN_MS = 1200;
 let lastToggleAt = 0;
+let currentAccelerator = TOGGLE_MAIN_ACCELERATOR;
 
-function registerChannelHotkeys(): void {
-  const ok = globalShortcut.register(TOGGLE_MAIN_ACCELERATOR, () => {
+function registerToggleShortcut(accelerator: string): boolean {
+  return globalShortcut.register(accelerator, () => {
     const now = Date.now();
     if (now - lastToggleAt < TOGGLE_COOLDOWN_MS) {
       return;
@@ -103,10 +111,34 @@ function registerChannelHotkeys(): void {
     lastToggleAt = now;
     mainWindow?.webContents.send(HOTKEY_TOGGLE_MAIN);
   });
+}
+
+function registerChannelHotkeys(): void {
+  currentAccelerator = loadAccelerator();
+  const ok = registerToggleShortcut(currentAccelerator);
   if (!ok) {
-    console.warn(`Failed to register global shortcut: ${TOGGLE_MAIN_ACCELERATOR}`);
+    console.warn(`Failed to register global shortcut: ${currentAccelerator}`);
   }
 }
+
+ipcMain.handle(HOTKEY_SETTINGS_GET, () => currentAccelerator);
+
+ipcMain.handle(HOTKEY_SETTINGS_SET, (_event, newAccelerator: string): SetHotkeyResult => {
+  globalShortcut.unregister(currentAccelerator);
+  const ok = registerToggleShortcut(newAccelerator);
+  if (ok) {
+    currentAccelerator = newAccelerator;
+    saveAccelerator(newAccelerator);
+    return { success: true };
+  }
+  // Re-register the old binding since the new one failed - leaving no
+  // hotkey registered at all would be worse than keeping the previous one.
+  registerToggleShortcut(currentAccelerator);
+  return {
+    success: false,
+    error: 'That key is already in use by another application.',
+  };
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

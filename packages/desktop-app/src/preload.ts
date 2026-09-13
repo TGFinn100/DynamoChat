@@ -2,7 +2,12 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { HOTKEY_TOGGLE_MAIN } from './lib/hotkeyChannel';
+import {
+  HOTKEY_SETTINGS_GET,
+  HOTKEY_SETTINGS_SET,
+  HOTKEY_TOGGLE_MAIN,
+  type SetHotkeyResult,
+} from './lib/hotkeyChannel';
 import { DEEP_LINK_JOIN_ROOM } from './lib/deepLink';
 
 contextBridge.exposeInMainWorld('hotkeys', {
@@ -10,6 +15,15 @@ contextBridge.exposeInMainWorld('hotkeys', {
     const listener = () => callback();
     ipcRenderer.on(HOTKEY_TOGGLE_MAIN, listener);
     return () => ipcRenderer.removeListener(HOTKEY_TOGGLE_MAIN, listener);
+  },
+});
+
+contextBridge.exposeInMainWorld('hotkeySettings', {
+  get(): Promise<string> {
+    return ipcRenderer.invoke(HOTKEY_SETTINGS_GET);
+  },
+  set(accelerator: string): Promise<SetHotkeyResult> {
+    return ipcRenderer.invoke(HOTKEY_SETTINGS_SET, accelerator);
   },
 });
 

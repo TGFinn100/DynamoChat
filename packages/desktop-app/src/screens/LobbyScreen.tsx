@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { MAIN_CHANNEL, type ChannelId } from "@ron-voice/shared";
 import { useSessionStore } from "../state/sessionStore";
 import { TeamBox } from "../components/TeamBox";
+import { SettingsPanel } from "../components/SettingsPanel";
 
 export function LobbyScreen() {
   const roomCode = useSessionStore((s) => s.roomCode);
@@ -18,6 +19,12 @@ export function LobbyScreen() {
 
   const [newTeamName, setNewTeamName] = useState("");
   const [showAddTeamForm, setShowAddTeamForm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [accelerator, setAccelerator] = useState("");
+
+  useEffect(() => {
+    void window.hotkeySettings.get().then(setAccelerator);
+  }, [showSettings]);
 
   function handleDragEnd(event: DragEndEvent) {
     const targetChannel = event.over?.id as ChannelId | undefined;
@@ -35,13 +42,24 @@ export function LobbyScreen() {
     setShowAddTeamForm(false);
   }
 
+  if (showSettings) {
+    return <SettingsPanel onClose={() => setShowSettings(false)} />;
+  }
+
   return (
     <main>
-      <h1>RoN Voice Chat</h1>
+      <div className="lobby-header">
+        <h1>RoN Voice Chat</h1>
+        <button type="button" onClick={() => setShowSettings(true)}>
+          Settings
+        </button>
+      </div>
       <p id="status">
         Room: <strong>{roomCode}</strong> &mdash; {status}
       </p>
-      <p className="hint">Press F1 to toggle between Main and your last team.</p>
+      <p className="hint">
+        Press {accelerator || "F1"} to toggle between Main and your last team.
+      </p>
 
       <DndContext onDragEnd={handleDragEnd}>
         <div className="team-box-grid">

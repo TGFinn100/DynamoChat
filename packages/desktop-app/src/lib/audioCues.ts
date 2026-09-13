@@ -1,12 +1,25 @@
 import { MAIN_CHANNEL, type ChannelId } from "@ron-voice/shared";
 
-let audioContext: AudioContext | null = null;
+// setSinkId isn't yet in TS's lib.dom types, though modern Chromium (and
+// Electron's bundled version) supports it on AudioContext.
+type AudioContextWithSink = AudioContext & {
+  setSinkId?: (sinkId: string) => Promise<void>;
+};
 
-function getAudioContext(): AudioContext {
+let audioContext: AudioContextWithSink | null = null;
+
+function getAudioContext(): AudioContextWithSink {
   if (!audioContext) {
     audioContext = new AudioContext();
   }
   return audioContext;
+}
+
+export async function setCueOutputDevice(deviceId: string): Promise<void> {
+  const ctx = getAudioContext();
+  if (typeof ctx.setSinkId === "function") {
+    await ctx.setSinkId(deviceId);
+  }
 }
 
 function playTone(ctx: AudioContext, frequency: number, startTime: number, duration: number): void {

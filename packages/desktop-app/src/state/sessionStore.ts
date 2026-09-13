@@ -5,8 +5,14 @@ import { MAIN_CHANNEL, teamChannelId, type ChannelId } from "@ron-voice/shared";
 import { createRoom as apiCreateRoom, fetchToken, HttpError } from "../lib/backendClient";
 import { connectToRoom, getParticipantChannel, setLocalChannel } from "../lib/livekitClient";
 import { attachChannelRouting, type ChannelRouting } from "../lib/channelRouting";
-import { playChannelSwitchCue } from "../lib/audioCues";
+import { playChannelSwitchCue, setCueOutputDevice } from "../lib/audioCues";
 import { retryWithWakeUp } from "../lib/retry";
+import {
+  getSavedInputDeviceId,
+  getSavedOutputDeviceId,
+  saveInputDeviceId,
+  saveOutputDeviceId,
+} from "../lib/deviceSettings";
 import {
   broadcastTeamAdded,
   decodeTeamSyncMessage,
@@ -37,6 +43,8 @@ interface SessionState {
   teams: TeamInfo[];
   participants: ParticipantInfo[];
   lastTeamChannel: ChannelId | null;
+  selectedInputDevice: string | null;
+  selectedOutputDevice: string | null;
 
   setBackendUrl: (value: string) => void;
   setDisplayName: (value: string) => void;
@@ -47,6 +55,8 @@ interface SessionState {
   addTeam: (name: string) => Promise<void>;
   moveLocalParticipantToChannel: (channel: ChannelId) => Promise<void>;
   toggleMainChannel: () => Promise<void>;
+  setInputDevice: (deviceId: string) => Promise<void>;
+  setOutputDevice: (deviceId: string) => Promise<void>;
 }
 
 function describeError(err: unknown): string {
@@ -111,6 +121,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   teams: [],
   participants: [],
   lastTeamChannel: null,
+  selectedInputDevice: getSavedInputDeviceId(),
+  selectedOutputDevice: getSavedOutputDeviceId(),
 
   setBackendUrl: (value) => set({ backendUrl: value }),
   setDisplayName: (value) => set({ displayName: value }),
@@ -266,6 +278,25 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       }
     } else {
       await moveLocalParticipantToChannel(MAIN_CHANNEL);
+    }
+  },
+
+  setInputDevice: async (deviceId: string) => {
+    saveInputDeviceId(deviceId);
+    set({ selectedInputDevice: deviceId });
+    const { room } = get();
+    if (room) {
+      await room.switchActiveDevice("audioinput", deviceId);
+    }
+  },
+
+  setOutputDevice: async (deviceId: string) => {
+    saveOutputDeviceId(deviceId);
+    set({ selectedOutputDevice: deviceId });
+    await setCueOutputDevice(deviceId);
+    const { room } = get();
+    if (room) {
+      await room.switchActiveDevice("audiooutput", deviceId);
     }
   },
 }));

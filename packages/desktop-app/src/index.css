@@ -117,3 +117,35 @@ body {
 .leave-row {
   margin-top: 1.5rem;
 }
+
+.lobby-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.settings-panel section {
+  margin-bottom: 1.5rem;
+}
+
+.settings-panel h3 {
+  margin: 0 0 0.5rem;
+}
+
+.settings-panel select {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.35rem;
+}
+
+.settings-error {
+  color: #e05252;
+  font-size: 0.85rem;
+}
