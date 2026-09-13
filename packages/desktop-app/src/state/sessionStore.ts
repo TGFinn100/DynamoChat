@@ -23,6 +23,12 @@ import {
 let activeRouting: ChannelRouting | null = null;
 let unsubscribeHotkeys: (() => void) | null = null;
 
+const DISPLAY_NAME_KEY = "ron-voice:display-name";
+
+function getSavedDisplayName(): string {
+  return localStorage.getItem(DISPLAY_NAME_KEY) ?? "";
+}
+
 export interface ParticipantInfo {
   identity: string;
   name: string;
@@ -45,8 +51,10 @@ interface SessionState {
   lastTeamChannel: ChannelId | null;
   selectedInputDevice: string | null;
   selectedOutputDevice: string | null;
+  showSettings: boolean;
 
   setBackendUrl: (value: string) => void;
+  setShowSettings: (value: boolean) => void;
   setDisplayName: (value: string) => void;
   setRoomCode: (value: string) => void;
   createRoom: () => Promise<void>;
@@ -112,7 +120,7 @@ function refreshParticipants(room: Room): ParticipantInfo[] {
 export const useSessionStore = create<SessionState>((set, get) => ({
   screen: "join",
   backendUrl: "https://ron-voice-backend.onrender.com",
-  displayName: "",
+  displayName: getSavedDisplayName(),
   roomCode: "",
   status: "Not connected.",
   room: null,
@@ -123,9 +131,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   lastTeamChannel: null,
   selectedInputDevice: getSavedInputDeviceId(),
   selectedOutputDevice: getSavedOutputDeviceId(),
+  showSettings: false,
 
   setBackendUrl: (value) => set({ backendUrl: value }),
-  setDisplayName: (value) => set({ displayName: value }),
+  setShowSettings: (value) => set({ showSettings: value }),
+  setDisplayName: (value) => {
+    localStorage.setItem(DISPLAY_NAME_KEY, value);
+    set({ displayName: value });
+  },
   setRoomCode: (value) => set({ roomCode: value }),
 
   createRoom: async () => {

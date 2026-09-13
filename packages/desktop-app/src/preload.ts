@@ -10,6 +10,7 @@ import {
 } from './lib/hotkeyChannel';
 import { DEEP_LINK_JOIN_ROOM } from './lib/deepLink';
 import { UPDATE_RESTART_NOW, UPDATE_STATUS_CHANGED, type UpdateStatus } from './lib/updateChannel';
+import { APP_GET_VERSION } from './lib/appInfoChannel';
 
 contextBridge.exposeInMainWorld('hotkeys', {
   onToggleMain(callback: () => void): () => void {
@@ -46,5 +47,11 @@ contextBridge.exposeInMainWorld('updateStatus', {
   },
   restartNow(): void {
     ipcRenderer.send(UPDATE_RESTART_NOW);
+  },
+});
+
+contextBridge.exposeInMainWorld('appInfo', {
+  getVersion(): Promise<string> {
+    return ipcRenderer.invoke(APP_GET_VERSION);
   },
 });

@@ -17,6 +17,9 @@ declare global {
       onStatusChange: (callback: (status: UpdateStatus) => void) => () => void;
       restartNow: () => void;
     };
+    appInfo: {
+      getVersion: () => Promise<string>;
+    };
   }
 }
 

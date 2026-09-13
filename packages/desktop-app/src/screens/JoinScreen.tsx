@@ -12,6 +12,7 @@ export function JoinScreen() {
   const setRoomCode = useSessionStore((s) => s.setRoomCode);
   const createRoom = useSessionStore((s) => s.createRoom);
   const join = useSessionStore((s) => s.join);
+  const setShowSettings = useSessionStore((s) => s.setShowSettings);
 
   const [copied, setCopied] = useState(false);
 
@@ -23,7 +24,12 @@ export function JoinScreen() {
 
   return (
     <main>
-      <h1>RoN Voice Chat</h1>
+      <div className="lobby-header">
+        <h1>RoN Voice Chat</h1>
+        <button type="button" onClick={() => setShowSettings(true)}>
+          Settings
+        </button>
+      </div>
       <section id="join-form">
         <label>
           Backend URL

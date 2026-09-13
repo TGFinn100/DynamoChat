@@ -12,6 +12,7 @@ import {
 import { DEEP_LINK_JOIN_ROOM, DEEP_LINK_PROTOCOL, extractRoomCodeFromArgs } from './lib/deepLink';
 import { loadAccelerator, saveAccelerator } from './hotkeyPersistence';
 import { UPDATE_RESTART_NOW, UPDATE_STATUS_CHANGED, type UpdateStatus } from './lib/updateChannel';
+import { APP_GET_VERSION } from './lib/appInfoChannel';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -40,6 +41,8 @@ if (app.isPackaged) {
 ipcMain.on(UPDATE_RESTART_NOW, () => {
   autoUpdater.quitAndInstall();
 });
+
+ipcMain.handle(APP_GET_VERSION, () => app.getVersion());
 
 // A protocol link launches a whole new process on Windows; without a single
 // instance lock every click would open a duplicate window instead of routing
@@ -94,8 +97,11 @@ const createWindow = () => {
     );
   }
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // Only auto-open DevTools in dev - a packaged build shouldn't greet
+  // friends with an inspector window every time they open the app.
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
 
   // A cold start via protocol link passes the URL in argv; wait for the page
   // to actually load before sending it, or the renderer's listener won't be

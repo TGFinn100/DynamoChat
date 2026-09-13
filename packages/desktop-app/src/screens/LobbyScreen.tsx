@@ -3,7 +3,6 @@ import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { MAIN_CHANNEL, type ChannelId } from "@ron-voice/shared";
 import { useSessionStore } from "../state/sessionStore";
 import { TeamBox } from "../components/TeamBox";
-import { SettingsPanel } from "../components/SettingsPanel";
 
 export function LobbyScreen() {
   const roomCode = useSessionStore((s) => s.roomCode);
@@ -16,15 +15,15 @@ export function LobbyScreen() {
     (s) => s.moveLocalParticipantToChannel,
   );
   const leave = useSessionStore((s) => s.leave);
+  const setShowSettings = useSessionStore((s) => s.setShowSettings);
 
   const [newTeamName, setNewTeamName] = useState("");
   const [showAddTeamForm, setShowAddTeamForm] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [accelerator, setAccelerator] = useState("");
 
   useEffect(() => {
     void window.hotkeySettings.get().then(setAccelerator);
-  }, [showSettings]);
+  }, []);
 
   function handleDragEnd(event: DragEndEvent) {
     const targetChannel = event.over?.id as ChannelId | undefined;
@@ -40,10 +39,6 @@ export function LobbyScreen() {
     void addTeam(name);
     setNewTeamName("");
     setShowAddTeamForm(false);
-  }
-
-  if (showSettings) {
-    return <SettingsPanel onClose={() => setShowSettings(false)} />;
   }
 
   return (

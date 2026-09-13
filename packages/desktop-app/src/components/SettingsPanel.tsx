@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSessionStore } from "../state/sessionStore";
 import { captureAccelerator } from "../lib/hotkeyCapture";
 import { listInputDevices, listOutputDevices } from "../lib/deviceSettings";
+import { ThemeSettings } from "./ThemeSettings";
 
 interface Props {
   onClose: () => void;
@@ -109,6 +110,8 @@ export function SettingsPanel({ onClose }: Props) {
           ))}
         </select>
       </section>
+
+      <ThemeSettings />
     </div>
   );
 }
