@@ -1,10 +1,14 @@
 {
-  "name": "@ron-voice/desktop-app",
+  "name": "ron-voice-desktop-app",
   "productName": "RoN Voice Chat",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Multi-lobby voice chat for Ready or Not",
   "main": ".vite/build/main.js",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TGFinn100/DynamoChat.git"
+  },
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
@@ -27,6 +31,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.2",
     "@electron-forge/plugin-fuses": "^7.11.2",
     "@electron-forge/plugin-vite": "^7.11.2",
+    "@electron-forge/publisher-github": "^7.11.2",
     "@electron/fuses": "^1.8.0",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/node": "^22.7.0",
@@ -49,6 +54,7 @@
     "nanoid": "^5.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "update-electron-app": "^3.0.0",
     "zustand": "^4.5.0"
   }
 }

@@ -1,12 +1,20 @@
 import { app, BrowserWindow, globalShortcut } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { updateElectronApp } from 'update-electron-app';
 import { HOTKEY_TOGGLE_MAIN, TOGGLE_MAIN_ACCELERATOR } from './lib/hotkeyChannel';
 import { DEEP_LINK_JOIN_ROOM, DEEP_LINK_PROTOCOL, extractRoomCodeFromArgs } from './lib/deepLink';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
+}
+
+// Only meaningful for a packaged install (Squirrel-installed), not `electron
+// forge start` during dev - update-electron-app checks GitHub Releases for
+// this repo and applies newer versions via Squirrel automatically.
+if (app.isPackaged) {
+  updateElectronApp();
 }
 
 // A protocol link launches a whole new process on Windows; without a single
