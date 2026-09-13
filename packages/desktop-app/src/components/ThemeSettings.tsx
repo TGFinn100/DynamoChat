@@ -5,9 +5,11 @@ import {
   getActiveTheme,
   getActiveThemeName,
   getAllThemes,
+  getAutoThemeSwitchEnabled,
   isPresetTheme,
   saveCustomTheme,
   setActiveThemeName,
+  setAutoThemeSwitchEnabled,
   type ThemeDefinition,
 } from "../lib/theme";
 
@@ -49,6 +51,7 @@ export function ThemeSettings() {
   const [editingOriginalName, setEditingOriginalName] = useState<string | null>(null);
   const [themeBeforeEditing, setThemeBeforeEditing] = useState<ThemeDefinition | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [autoThemeSwitch, setAutoThemeSwitch] = useState(getAutoThemeSwitchEnabled());
 
   // Live preview: while the form is open, every color change applies
   // immediately so the effect is visible before committing.
@@ -130,6 +133,17 @@ export function ThemeSettings() {
   return (
     <section>
       <h3>Theme</h3>
+      <label className="auto-theme-toggle">
+        <input
+          type="checkbox"
+          checked={autoThemeSwitch}
+          onChange={(e) => {
+            setAutoThemeSwitch(e.target.checked);
+            setAutoThemeSwitchEnabled(e.target.checked);
+          }}
+        />
+        Automatically switch theme when a supported game is running
+      </label>
       <div className="theme-list">
         {themes.map((theme) => (
           <div key={theme.name} className="theme-list__item">

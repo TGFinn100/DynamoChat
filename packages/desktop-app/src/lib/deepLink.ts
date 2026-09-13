@@ -15,6 +15,10 @@ export function extractRoomCodeFromArgs(args: string[]): string | null {
   return null;
 }
 
+// Discord (and most chat apps) won't render a custom-scheme link like
+// "ronvoice://..." as clickable - only http(s) and a small hardcoded
+// allowlist. Share this https bridge page instead; it immediately hands off
+// to the app link client-side. See the gh-pages branch's join/index.html.
 export function buildDeepLink(roomCode: string): string {
-  return `${DEEP_LINK_PROTOCOL}://${roomCode.toLowerCase()}`;
+  return `https://tgfinn100.github.io/DynamoChat/join/?code=${roomCode.toLowerCase()}`;
 }

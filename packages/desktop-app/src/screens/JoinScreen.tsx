@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSessionStore } from "../state/sessionStore";
 import { buildDeepLink } from "../lib/deepLink";
+import { useRunningStatsGameName } from "../lib/useRunningStatsGame";
 
 export function JoinScreen() {
   const backendUrl = useSessionStore((s) => s.backendUrl);
@@ -13,8 +14,10 @@ export function JoinScreen() {
   const createRoom = useSessionStore((s) => s.createRoom);
   const join = useSessionStore((s) => s.join);
   const setShowSettings = useSessionStore((s) => s.setShowSettings);
+  const setShowStats = useSessionStore((s) => s.setShowStats);
 
   const [copied, setCopied] = useState(false);
+  const runningGameName = useRunningStatsGameName();
 
   async function handleCopyLink() {
     await navigator.clipboard.writeText(buildDeepLink(roomCode.trim()));
@@ -25,10 +28,15 @@ export function JoinScreen() {
   return (
     <main>
       <div className="lobby-header">
-        <h1>RoN Voice Chat</h1>
-        <button type="button" onClick={() => setShowSettings(true)}>
-          Settings
-        </button>
+        <h1>Dynamo Chat</h1>
+        <div className="button-row">
+          <button type="button" onClick={() => setShowStats(true)}>
+            {runningGameName ? `${runningGameName} Stats` : "Game Stats"}
+          </button>
+          <button type="button" onClick={() => setShowSettings(true)}>
+            Settings
+          </button>
+        </div>
       </div>
       <section id="join-form">
         <label>

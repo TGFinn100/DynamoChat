@@ -3,6 +3,7 @@ import { useSessionStore } from "../state/sessionStore";
 import { captureAccelerator } from "../lib/hotkeyCapture";
 import { listInputDevices, listOutputDevices } from "../lib/deviceSettings";
 import { ThemeSettings } from "./ThemeSettings";
+import { OverlaySettings } from "./OverlaySettings";
 
 interface Props {
   onClose: () => void;
@@ -110,6 +111,8 @@ export function SettingsPanel({ onClose }: Props) {
           ))}
         </select>
       </section>
+
+      <OverlaySettings />
 
       <ThemeSettings />
     </div>

@@ -3,6 +3,7 @@ import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { MAIN_CHANNEL, type ChannelId } from "@ron-voice/shared";
 import { useSessionStore } from "../state/sessionStore";
 import { TeamBox } from "../components/TeamBox";
+import { useRunningStatsGameName } from "../lib/useRunningStatsGame";
 
 export function LobbyScreen() {
   const roomCode = useSessionStore((s) => s.roomCode);
@@ -16,10 +17,12 @@ export function LobbyScreen() {
   );
   const leave = useSessionStore((s) => s.leave);
   const setShowSettings = useSessionStore((s) => s.setShowSettings);
+  const setShowStats = useSessionStore((s) => s.setShowStats);
 
   const [newTeamName, setNewTeamName] = useState("");
   const [showAddTeamForm, setShowAddTeamForm] = useState(false);
   const [accelerator, setAccelerator] = useState("");
+  const runningGameName = useRunningStatsGameName();
 
   useEffect(() => {
     void window.hotkeySettings.get().then(setAccelerator);
@@ -44,10 +47,15 @@ export function LobbyScreen() {
   return (
     <main>
       <div className="lobby-header">
-        <h1>RoN Voice Chat</h1>
-        <button type="button" onClick={() => setShowSettings(true)}>
-          Settings
-        </button>
+        <h1>Dynamo Chat</h1>
+        <div className="button-row">
+          <button type="button" onClick={() => setShowStats(true)}>
+            {runningGameName ? `${runningGameName} Stats` : "Game Stats"}
+          </button>
+          <button type="button" onClick={() => setShowSettings(true)}>
+            Settings
+          </button>
+        </div>
       </div>
       <p id="status">
         Room: <strong>{roomCode}</strong> &mdash; {status}

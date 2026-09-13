@@ -32,6 +32,46 @@ body {
   color: var(--text);
 }
 
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.1);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+select {
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.lobby-header h1 {
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 0.3rem;
+  margin: 0;
+}
+
+#status {
+  display: inline-block;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 0.25rem;
+}
+
 #join-form {
   display: flex;
   flex-direction: column;
@@ -73,7 +113,7 @@ body {
 .team-box {
   flex: 1 1 10rem;
   min-height: 6rem;
-  border: 2px dashed var(--border);
+  border: 2px dashed var(--accent);
   border-radius: 0.5rem;
   padding: 0.75rem;
 }
@@ -154,6 +194,13 @@ body {
   margin-bottom: 1rem;
 }
 
+.settings-panel__header h2 {
+  display: inline-block;
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 0.3rem;
+  margin: 0;
+}
+
 .settings-panel section {
   margin-bottom: 1.5rem;
 }
@@ -171,6 +218,57 @@ body {
 .settings-error {
   color: #e05252;
   font-size: 0.85rem;
+}
+
+.settings-hint {
+  color: var(--muted, #888);
+  font-size: 0.85rem;
+}
+
+.overlay-game-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.stats-table th,
+.stats-table td {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border, #d1d5db);
+}
+
+.stats-table th {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--accent-bg);
+  border-bottom: 2px solid var(--accent);
+}
+
+.stats-table tbody tr:hover {
+  background: var(--accent-bg);
+}
+
+.stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.auto-theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .theme-list {

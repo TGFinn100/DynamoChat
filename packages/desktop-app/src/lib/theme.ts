@@ -31,10 +31,21 @@ export const PRESET_THEMES: ThemeDefinition[] = [
     light: { bg: "#f8f6fb", text: "#211a2c", accent: "#7c5cff" },
     dark: { bg: "#15121c", text: "#ece7f5", accent: "#a78bfa" },
   },
+  // Colors eyeballed from the game's official key art (dark SWAT operator
+  // silhouette against a near-black background with dramatic red lighting/
+  // haze, white logo text) - approximate, not sampled with a color picker.
+  // Auto-applied when Ready or Not is detected running - see
+  // useAutoGameTheme.ts and overlayGameChannel.ts's themeName field.
+  {
+    name: "Ready or Not",
+    light: { bg: "#f2ece6", text: "#171010", accent: "#a8112a" },
+    dark: { bg: "#100a09", text: "#f2ece6", accent: "#d1263f" },
+  },
 ];
 
 const CUSTOM_THEMES_KEY = "ron-voice:custom-themes";
 const ACTIVE_THEME_KEY = "ron-voice:active-theme";
+const AUTO_THEME_SWITCH_KEY = "ron-voice:auto-theme-switch";
 
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace("#", "");
@@ -135,4 +146,14 @@ export function setActiveThemeName(name: string): void {
 export function getActiveTheme(): ThemeDefinition {
   const name = getActiveThemeName();
   return getAllThemes().find((t) => t.name === name) ?? PRESET_THEMES[0];
+}
+
+// Off by default - never silently change the app's look without the user
+// opting in first.
+export function getAutoThemeSwitchEnabled(): boolean {
+  return localStorage.getItem(AUTO_THEME_SWITCH_KEY) === "true";
+}
+
+export function setAutoThemeSwitchEnabled(enabled: boolean): void {
+  localStorage.setItem(AUTO_THEME_SWITCH_KEY, String(enabled));
 }

@@ -1,5 +1,8 @@
 import type { SetHotkeyResult } from "./lib/hotkeyChannel";
 import type { UpdateStatus } from "./lib/updateChannel";
+import type { OverlayGameStatus, SetWindowedFullscreenResult } from "./lib/overlayGameChannel";
+import type { OverlayData } from "./lib/overlayDataChannel";
+import type { StatsGameInfo, GetStatsResult } from "./lib/statsChannel";
 
 declare global {
   interface Window {
@@ -19,6 +22,20 @@ declare global {
     };
     appInfo: {
       getVersion: () => Promise<string>;
+    };
+    overlayGames: {
+      getStatuses: () => Promise<OverlayGameStatus[]>;
+      setWindowedFullscreen: (gameId: string, enabled: boolean) => Promise<SetWindowedFullscreenResult>;
+    };
+    overlayData: {
+      update: (data: OverlayData) => void;
+    };
+    gameStats: {
+      listGames: () => Promise<StatsGameInfo[]>;
+      getStats: (gameId: string) => Promise<GetStatsResult>;
+    };
+    gamesRunning: {
+      list: () => Promise<string[]>;
     };
   }
 }

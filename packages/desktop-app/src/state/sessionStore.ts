@@ -35,6 +35,7 @@ export interface ParticipantInfo {
   isLocal: boolean;
   channel: ChannelId;
   audible: boolean;
+  speaking: boolean;
 }
 
 interface SessionState {
@@ -52,9 +53,11 @@ interface SessionState {
   selectedInputDevice: string | null;
   selectedOutputDevice: string | null;
   showSettings: boolean;
+  showStats: boolean;
 
   setBackendUrl: (value: string) => void;
   setShowSettings: (value: boolean) => void;
+  setShowStats: (value: boolean) => void;
   setDisplayName: (value: string) => void;
   setRoomCode: (value: string) => void;
   createRoom: () => Promise<void>;
@@ -95,7 +98,12 @@ function isAudioAudible(publications: Map<string, { kind: Track.Kind; isSubscrib
   return false;
 }
 
-function refreshParticipants(room: Room): ParticipantInfo[] {
+// Structural refreshes (join/leave/track change) don't know who's actively
+// speaking right now - that comes from a separate, more frequent LiveKit
+// event (ActiveSpeakersChanged) - so carry forward whatever we last knew
+// rather than flashing every participant's indicator off on every refresh.
+function refreshParticipants(room: Room, previous: ParticipantInfo[] = []): ParticipantInfo[] {
+  const wasSpeaking = new Set(previous.filter((p) => p.speaking).map((p) => p.identity));
   const list: ParticipantInfo[] = [
     {
       identity: room.localParticipant.identity,
@@ -103,6 +111,7 @@ function refreshParticipants(room: Room): ParticipantInfo[] {
       isLocal: true,
       channel: getParticipantChannel(room.localParticipant.attributes),
       audible: true,
+      speaking: wasSpeaking.has(room.localParticipant.identity),
     },
   ];
   room.remoteParticipants.forEach((participant) => {
@@ -112,6 +121,7 @@ function refreshParticipants(room: Room): ParticipantInfo[] {
       isLocal: false,
       channel: getParticipantChannel(participant.attributes),
       audible: isAudioAudible(participant.trackPublications),
+      speaking: wasSpeaking.has(participant.identity),
     });
   });
   return list;
@@ -132,9 +142,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   selectedInputDevice: getSavedInputDeviceId(),
   selectedOutputDevice: getSavedOutputDeviceId(),
   showSettings: false,
+  showStats: false,
 
   setBackendUrl: (value) => set({ backendUrl: value }),
   setShowSettings: (value) => set({ showSettings: value }),
+  setShowStats: (value) => set({ showStats: value }),
   setDisplayName: (value) => {
     localStorage.setItem(DISPLAY_NAME_KEY, value);
     set({ displayName: value });
@@ -184,22 +196,31 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       });
 
       room.on(RoomEvent.ParticipantConnected, (participant) => {
-        set({ participants: refreshParticipants(room) });
+        set({ participants: refreshParticipants(room, get().participants) });
         if (get().isHost) {
           void sendTeamsSyncTo(room.localParticipant, get().teams, participant.identity);
         }
       });
       room.on(RoomEvent.ParticipantDisconnected, () => {
-        set({ participants: refreshParticipants(room) });
+        set({ participants: refreshParticipants(room, get().participants) });
       });
       room.on(RoomEvent.ParticipantAttributesChanged, () => {
-        set({ participants: refreshParticipants(room) });
+        set({ participants: refreshParticipants(room, get().participants) });
       });
       room.on(RoomEvent.TrackSubscribed, () => {
-        set({ participants: refreshParticipants(room) });
+        set({ participants: refreshParticipants(room, get().participants) });
       });
       room.on(RoomEvent.TrackUnsubscribed, () => {
-        set({ participants: refreshParticipants(room) });
+        set({ participants: refreshParticipants(room, get().participants) });
+      });
+      room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
+        const speakingIds = new Set(speakers.map((s) => s.identity));
+        set({
+          participants: get().participants.map((p) => ({
+            ...p,
+            speaking: speakingIds.has(p.identity),
+          })),
+        });
       });
       room.on(RoomEvent.DataReceived, (payload) => {
         const message = decodeTeamSyncMessage(payload);
@@ -238,7 +259,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         void setLocalChannel(room, myChannel).then(() => {
           activeRouting?.reconcileAll();
           set({
-            participants: refreshParticipants(room),
+            participants: refreshParticipants(room, get().participants),
             status: `Connected to ${get().roomCode.trim()}`,
           });
         });
@@ -274,7 +295,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     await setLocalChannel(room, channel);
     activeRouting?.reconcileAll();
     set({
-      participants: refreshParticipants(room),
+      participants: refreshParticipants(room, get().participants),
       ...(channel !== MAIN_CHANNEL ? { lastTeamChannel: channel } : {}),
     });
     playChannelSwitchCue(channel);
