@@ -21,6 +21,7 @@ export async function mintToken(params: {
     roomJoin: true,
     canPublish: true,
     canSubscribe: true,
+    canUpdateOwnMetadata: true,
   });
 
   return at.toJwt();

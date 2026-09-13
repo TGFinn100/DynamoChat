@@ -37,3 +37,49 @@ body {
 #participant-list li {
   padding: 0.25rem 0;
 }
+
+.team-box-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.team-box {
+  flex: 1 1 10rem;
+  min-height: 6rem;
+  border: 2px dashed #999;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.team-box h3 {
+  margin: 0 0 0.5rem;
+}
+
+.team-box--over {
+  border-color: #4c8bf5;
+  background: rgba(76, 139, 245, 0.08);
+}
+
+.team-box__tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.participant-tile {
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.35rem;
+  background: #eee;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.add-team-section {
+  margin-top: 1rem;
+}
+
+.leave-row {
+  margin-top: 1.5rem;
+}
