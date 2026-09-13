@@ -3,7 +3,7 @@ import { MAIN_CHANNEL, type ChannelId } from "@ron-voice/shared";
 
 export async function connectToRoom(livekitUrl: string, token: string): Promise<Room> {
   const room = new Room();
-  await room.connect(livekitUrl, token);
+  await room.connect(livekitUrl, token, { autoSubscribe: false });
   await room.localParticipant.setMicrophoneEnabled(true);
   await setLocalChannel(room, MAIN_CHANNEL);
   return room;

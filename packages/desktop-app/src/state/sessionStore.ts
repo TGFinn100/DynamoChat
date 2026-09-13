@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
-import { Room, RoomEvent } from "livekit-client";
+import { Room, RoomEvent, Track } from "livekit-client";
 import { teamChannelId, type ChannelId } from "@ron-voice/shared";
 import { createRoom as apiCreateRoom, fetchToken } from "../lib/backendClient";
 import { connectToRoom, getParticipantChannel, setLocalChannel } from "../lib/livekitClient";
+import { attachChannelRouting, type ChannelRouting } from "../lib/channelRouting";
 import {
   broadcastTeamAdded,
   decodeTeamSyncMessage,
@@ -11,11 +12,14 @@ import {
   type TeamInfo,
 } from "../lib/teamSync";
 
+let activeRouting: ChannelRouting | null = null;
+
 export interface ParticipantInfo {
   identity: string;
   name: string;
   isLocal: boolean;
   channel: ChannelId;
+  audible: boolean;
 }
 
 interface SessionState {
@@ -40,6 +44,15 @@ interface SessionState {
   moveLocalParticipantToChannel: (channel: ChannelId) => Promise<void>;
 }
 
+function isAudioAudible(publications: Map<string, { kind: Track.Kind; isSubscribed?: boolean }>): boolean {
+  for (const pub of publications.values()) {
+    if (pub.kind === Track.Kind.Audio && pub.isSubscribed) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function refreshParticipants(room: Room): ParticipantInfo[] {
   const list: ParticipantInfo[] = [
     {
@@ -47,6 +60,7 @@ function refreshParticipants(room: Room): ParticipantInfo[] {
       name: room.localParticipant.name || room.localParticipant.identity,
       isLocal: true,
       channel: getParticipantChannel(room.localParticipant.attributes),
+      audible: true,
     },
   ];
   room.remoteParticipants.forEach((participant) => {
@@ -55,6 +69,7 @@ function refreshParticipants(room: Room): ParticipantInfo[] {
       name: participant.name || participant.identity,
       isLocal: false,
       channel: getParticipantChannel(participant.attributes),
+      audible: isAudioAudible(participant.trackPublications),
     });
   });
   return list;
@@ -104,6 +119,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       set({ status: "Connecting to voice..." });
       const room = await connectToRoom(livekitUrl, token);
       const isHost = get().createdRoomCode === roomCode.trim();
+      activeRouting = attachChannelRouting(room);
 
       room.on(RoomEvent.ParticipantConnected, (participant) => {
         set({ participants: refreshParticipants(room) });
@@ -115,6 +131,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         set({ participants: refreshParticipants(room) });
       });
       room.on(RoomEvent.ParticipantAttributesChanged, () => {
+        set({ participants: refreshParticipants(room) });
+      });
+      room.on(RoomEvent.TrackSubscribed, () => {
+        set({ participants: refreshParticipants(room) });
+      });
+      room.on(RoomEvent.TrackUnsubscribed, () => {
         set({ participants: refreshParticipants(room) });
       });
       room.on(RoomEvent.DataReceived, (payload) => {
@@ -130,6 +152,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         }
       });
       room.on(RoomEvent.Disconnected, () => {
+        activeRouting?.detach();
+        activeRouting = null;
         set({
           screen: "join",
           room: null,
@@ -169,6 +193,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const { room } = get();
     if (!room) return;
     await setLocalChannel(room, channel);
+    activeRouting?.reconcileAll();
     set({ participants: refreshParticipants(room) });
   },
 }));

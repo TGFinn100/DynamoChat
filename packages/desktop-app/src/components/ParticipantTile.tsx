@@ -27,7 +27,7 @@ export function ParticipantTile({ participant }: Props) {
       {...(participant.isLocal ? attributes : {})}
     >
       {participant.name}
-      {participant.isLocal ? " (you)" : ""}
+      {participant.isLocal ? " (you)" : participant.audible ? " 🔊" : " 🔇"}
     </div>
   );
 }
